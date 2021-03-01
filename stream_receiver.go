@@ -57,16 +57,17 @@ func main() {
 
 	// Infinite loop which receives frames from go sender peer and then saves them as jpeg files.
 	for {
-		frameSize := common.ReadDataWithQUIC(stream)
-		size, _ := strconv.ParseInt(strings.Trim(frameSize, ":"), 10, 64)
+		frameSize := common.ReadDataWithQUIC(stream, 20)
+		size, _ := strconv.ParseInt(strings.Trim(string(frameSize), ":"), 10, 64)
 
 		if size == 0 {
-			break
+			fmt.Println("Got zero frame, will keep trying")
+			continue
 		}
 
 		fmt.Println("frame size: ", size)
 
-		frameContent := common.ReadDataWithQUIC(stream)
+		frameContent := common.ReadDataWithQUIC(stream, size)
 		jpegFile, err := os.Create(videoDir + "/img" + strconv.Itoa(frameCounter) + ".jpg")
 		if err != nil {
 			fmt.Println("Error saving the received frame, Error: ", err.Error())
@@ -74,7 +75,7 @@ func main() {
 		}
 		frameCounter += 1
 
-		_, err = jpegFile.Write([]byte(frameContent))
+		_, err = jpegFile.Write(frameContent)
 		if err != nil {
 			fmt.Println("Error saving the received frame, Error: ", err.Error())
 		}

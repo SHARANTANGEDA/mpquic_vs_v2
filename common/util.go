@@ -18,7 +18,6 @@ import (
 	"github.com/teris-io/shortid"
 
 	quic "github.com/SHARANTANGEDA/mp-quic"
-	"github.com/SHARANTANGEDA/mpquic_vs_v2/constants"
 )
 
 func GenerateTLSConfig() *tls.Config {
@@ -69,43 +68,29 @@ func SendFileWithQUIC(session quic.Session, filePath string) error {
 	return nil
 }
 
-func ReadDataWithQUIC(stream quic.Stream) string {
-	receivedData := ""
-	for {
-		// Make a buffer to hold incoming data.
-		buf := make([]byte, constants.MAX_PACKET_CONTENT_SIZE)
-		// Read the incoming connection into the buffer.
-		readLen, err := stream.Read(buf)
-		if readLen > 0 {
-			receivedData += string(buf[:readLen])
-		}
-		if err != nil {
-			if err == io.EOF {
-				break // Data Transfer is done
-			} else if err.Error() == "PeerGoingAway: " {
-				continue
-			}
-			log.Fatal("Error reading: ", err.Error(), readLen)
-		}
+func ReadDataWithQUIC(stream quic.Stream, frameSize int64) []byte {
+	// Make a buffer to hold incoming data.
+	buf := make([]byte, frameSize)
+	// Read the incoming connection into the buffer.
+	readLen, err := io.ReadFull(stream, buf)
+	if err != nil {
+		log.Fatal("Error reading: ", err.Error(), readLen)
+	} else {
+		fmt.Println("Read: ", readLen)
 	}
-	return receivedData
+	return buf
 }
 
-func ReadDataWithTCP(connection *net.TCPConn) string {
-	receivedData := ""
-	for {
-		// Make a buffer to hold incoming data.
-		buf := make([]byte, constants.MAX_PACKET_CONTENT_SIZE)
-		// Read the incoming connection into the buffer.
-		readLen, err := io.ReadFull(connection, buf)
-		if readLen > 0 {
-			receivedData += string(buf[:readLen])
-		}
-		if err != nil {
-			log.Fatal("Error reading: ", err.Error(), readLen)
-		}
+func ReadDataWithTCP(connection *net.TCPConn, frameSize int64) []byte {
+	// Make a buffer to hold incoming data.
+	buf := make([]byte, frameSize)
+	// Read the incoming connection into the buffer.
+	readLen, err := io.ReadFull(connection, buf)
+
+	if err != nil {
+		log.Fatal("Error reading: ", err.Error(), readLen)
 	}
-	return receivedData
+	return buf
 }
 
 func StoreFile(fileName, dirPath, fileData string) {

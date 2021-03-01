@@ -52,37 +52,38 @@ func main() {
 	if err != nil {
 		log.Fatal("Error Opening Write Stream: ", err)
 	}
+	println("Created Stream")
 	defer stream.Close()
 
 	// Infinite loop which takes frame from stream generator and then transmit it to the peer using
 	// mpquic stream.
 	for {
 		// receive the frame size
-		frameSizeContent := common.ReadDataWithTCP(conn)
+		frameSizeContent := common.ReadDataWithTCP(conn, 20)
 
 		// fetch size value from the packet by removing trailing ':' symbols.
-		size, _ := strconv.ParseInt(strings.Trim(frameSizeContent, ":"), 10, 64)
+		size, _ := strconv.ParseInt(strings.Trim(string(frameSizeContent), ":"), 10, 64)
 
 		// terminate the process when an empty packet is received.
 		if size == 0 {
 			// send the reply size of zero to terminate the peer.
-			_, err := stream.Write([]byte(frameSizeContent))
+			_, err := stream.Write(frameSizeContent)
 			if err != nil {
-				log.Fatal("Error sending frame size")
+				fmt.Println("Error sending frame size")
 			}
 			break
 		}
 		println("frame size: ", size)
-		frameContent := common.ReadDataWithTCP(conn)
+		frameContent := common.ReadDataWithTCP(conn, size)
 
 		// Send the frame size and frame using mpquic stream
-		_, err = stream.Write([]byte(frameSizeContent))
+		_, err = stream.Write(frameSizeContent)
 		if err != nil {
-			log.Fatal("Error sending frame size")
+			fmt.Println("Error sending frame size")
 		}
-		_, err = stream.Write([]byte(frameContent))
+		_, err = stream.Write(frameContent)
 		if err != nil {
-			log.Fatal("Error sending Photo Frame")
+			fmt.Println("Error sending Photo Frame")
 		}
 	}
 }
